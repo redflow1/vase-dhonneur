@@ -1,0 +1,63 @@
+@import "tailwindcss";
+
+:root {
+  --background: #FAFAFA;
+  --foreground: #1A1A2E;
+  --teal-deep: #1A6B5C;
+  --teal-light: #2D8B78;
+  --teal-muted: #E0F0EC;
+  --gold: #C9940A;
+  --gold-light: #F5D070;
+  --gold-muted: #FFF8E7;
+  --card-bg: #FFFFFF;
+  --card-border: #E5E7EB;
+  --sidebar-bg: #1A6B5C;
+  --sidebar-text: #E0F0EC;
+  --input-bg: #FFFFFF;
+  --input-border: #D1D5DB;
+  --muted: #6B7280;
+}
+
+.dark {
+  --background: #091A17;
+  --foreground: #F0EFF4;
+  --teal-muted: #0F2925;
+  --card-bg: #0F2420;
+  --card-border: #1A3D36;
+  --sidebar-bg: #0D201C;
+  --sidebar-text: #B8D8D0;
+  --input-bg: #0F2420;
+  --input-border: #1A3D36;
+  --muted: #9CA3AF;
+  --gold-muted: #2A2210;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-teal-deep: var(--teal-deep);
+  --color-teal-light: var(--teal-light);
+  --color-teal-muted: var(--teal-muted);
+  --color-gold: var(--gold);
+  --color-gold-light: var(--gold-light);
+  --color-gold-muted: var(--gold-muted);
+  --color-card-bg: var(--card-bg);
+  --color-card-border: var(--card-border);
+  --color-sidebar-bg: var(--sidebar-bg);
+  --color-sidebar-text: var(--sidebar-text);
+  --color-input-bg: var(--input-bg);
+  --color-input-border: var(--input-border);
+  --color-muted: var(--muted);
+  --font-sans: "Montserrat", sans-serif;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: "Montserrat", sans-serif;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--teal-deep) transparent;
+}

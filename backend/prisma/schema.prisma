@@ -1,0 +1,550 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ==================== ENUMS ====================
+
+enum Role {
+  SUPER_ADMIN
+  ADMIN
+  PASTEUR
+  GDC
+  COM
+  LOUANGE
+  JEUNESSE
+  FEMMES
+  HOMMES
+  INTERCESSION
+  ACCUEIL
+  EVA
+  MRS
+  MEMBRE
+}
+
+enum VisitorStatus {
+  NOUVEAU
+  RELANCE
+  CONVERTI
+  BAPTISE
+  INTEGRE
+  PERDU
+}
+
+enum CertificateType {
+  BAPTEME
+  MARIAGE
+  ATTESTATION_MEMBRE
+  DEDICACE
+}
+
+enum DonationType {
+  DIME
+  OFFRANDE
+  DON_SPECIAL
+}
+
+enum PaymentMethod {
+  ESPECES
+  MOBILE_MONEY_MTN
+  MOBILE_MONEY_ORANGE
+  CARTE_BANCAIRE
+}
+
+enum BookingStatus {
+  EN_ATTENTE
+  APPROUVE
+  REJETE
+  ANNULE
+}
+
+enum TestimonyStatus {
+  EN_ATTENTE
+  APPROUVE
+  REJETE
+}
+
+enum ServiceStatus {
+  BROUILLON
+  VALIDE
+  TERMINE
+}
+
+// ==================== CORE MODELS ====================
+
+model Church {
+  id         String    @id @default(uuid())
+  name       String
+  city       String
+  address    String?
+  phone      String?
+  email      String?
+  pastorName String?
+  logoUrl    String?
+  foundedAt  DateTime?
+  parentId   String?
+  parent     Church?   @relation("ChurchTree", fields: [parentId], references: [id])
+  children   Church[]  @relation("ChurchTree")
+  createdAt  DateTime  @default(now())
+
+  members            User[]
+  attendances        Attendance[]
+  services           Service[]
+  songs              Song[]
+  setlists           Setlist[]
+  announcements      Announcement[]
+  prayerRequests     PrayerRequest[]
+  testimonies        Testimony[]
+  sermons            Sermon[]
+  readingPlans       ReadingPlan[]
+  weeklyVerses       WeeklyVerse[]
+  visitors           Visitor[]
+  donations          Donation[]
+  budgets            Budget[]
+  events             Event[]
+  rooms              Room[]
+  cells              Cell[]
+  pastoralNotes      PastoralNote[]
+  certificates       Certificate[]
+}
+
+model User {
+  id         String    @id @default(uuid())
+  email      String    @unique
+  password   String
+  firstName  String
+  lastName   String
+  phone      String?
+  photoUrl   String?
+  birthDate  DateTime?
+  address    String?
+  department String?
+  role       Role      @default(MEMBRE)
+  isActive   Boolean   @default(true)
+  churchId   String
+  church     Church    @relation(fields: [churchId], references: [id])
+  cellId     String?
+  cell       Cell?     @relation("CellMembers", fields: [cellId], references: [id])
+  createdAt  DateTime  @default(now())
+
+  attendances        Attendance[]
+  serviceItems       ServiceItem[]
+  setlistMusicians   SetlistMusician[]
+  announcements      Announcement[]
+  notifications      Notification[]
+  prayerRequests     PrayerRequest[]
+  testimonies        Testimony[]
+  readingProgress    ReadingProgress[]
+  visitorFollowUps   VisitorFollowUp[]
+  donations          Donation[]
+  eventRegistrations EventRegistration[]
+  roomBookings       RoomBooking[]
+  pastoralNotes      PastoralNote[]    @relation("PastoralSubject")
+  pastoralAuthored   PastoralNote[]    @relation("PastoralAuthor")
+  certificates       Certificate[]
+  cellsLed           Cell[]            @relation("CellLeader")
+}
+
+// ==================== MODULE 2 - PRESENCES ====================
+
+model Attendance {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  churchId    String
+  church      Church   @relation(fields: [churchId], references: [id])
+  date        DateTime
+  serviceType String?
+  createdAt   DateTime @default(now())
+
+  @@index([churchId, date])
+}
+
+// ==================== MODULE 3 - ESPACE MEMBRE ====================
+
+model WeeklyVerse {
+  id        String   @id @default(uuid())
+  churchId  String
+  church    Church   @relation(fields: [churchId], references: [id])
+  reference String
+  text      String
+  weekStart DateTime
+  createdAt DateTime @default(now())
+
+  @@unique([churchId, weekStart])
+}
+
+model ReadingPlan {
+  id           String             @id @default(uuid())
+  churchId     String
+  church       Church             @relation(fields: [churchId], references: [id])
+  title        String
+  durationDays Int
+  createdAt    DateTime           @default(now())
+  entries      ReadingPlanEntry[]
+  progress     ReadingProgress[]
+}
+
+model ReadingPlanEntry {
+  id        String      @id @default(uuid())
+  planId    String
+  plan      ReadingPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+  day       Int
+  reference String
+  passage   String?
+
+  @@unique([planId, day])
+}
+
+model ReadingProgress {
+  id            String      @id @default(uuid())
+  userId        String
+  user          User        @relation(fields: [userId], references: [id])
+  planId        String
+  plan          ReadingPlan @relation(fields: [planId], references: [id])
+  completedDays Int         @default(0)
+  done          Boolean     @default(false)
+  updatedAt     DateTime    @updatedAt
+
+  @@unique([userId, planId])
+}
+
+// ==================== MODULE 4 - PROGRAMME DU CULTE ====================
+
+model Service {
+  id        String        @id @default(uuid())
+  churchId  String
+  church    Church        @relation(fields: [churchId], references: [id])
+  title     String
+  date      DateTime
+  theme     String?
+  status    ServiceStatus @default(BROUILLON)
+  createdAt DateTime      @default(now())
+  items     ServiceItem[]
+  setlists  Setlist[]
+}
+
+model ServiceItem {
+  id        String  @id @default(uuid())
+  serviceId String
+  service   Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  order     Int
+  role      String
+  userId    String?
+  user      User?   @relation(fields: [userId], references: [id])
+  duration  Int?
+  notes     String?
+}
+
+// ==================== MODULE 5 - LOUANGE ====================
+
+model Song {
+  id        String        @id @default(uuid())
+  churchId  String
+  church    Church        @relation(fields: [churchId], references: [id])
+  title     String
+  artist    String?
+  key       String?
+  lyrics    String?
+  audioUrl  String?
+  createdAt DateTime      @default(now())
+  setlists  SetlistSong[]
+}
+
+model Setlist {
+  id        String            @id @default(uuid())
+  churchId  String
+  church    Church            @relation(fields: [churchId], references: [id])
+  serviceId String?
+  service   Service?          @relation(fields: [serviceId], references: [id])
+  date      DateTime
+  createdAt DateTime          @default(now())
+  songs     SetlistSong[]
+  musicians SetlistMusician[]
+}
+
+model SetlistSong {
+  id        String  @id @default(uuid())
+  setlistId String
+  setlist   Setlist @relation(fields: [setlistId], references: [id], onDelete: Cascade)
+  songId    String
+  song      Song    @relation(fields: [songId], references: [id])
+  order     Int
+
+  @@unique([setlistId, songId])
+}
+
+model SetlistMusician {
+  id         String  @id @default(uuid())
+  setlistId  String
+  setlist    Setlist @relation(fields: [setlistId], references: [id], onDelete: Cascade)
+  userId     String
+  user       User    @relation(fields: [userId], references: [id])
+  instrument String
+  notified   Boolean @default(false)
+
+  @@unique([setlistId, userId])
+}
+
+// ==================== MODULE 6 - COMMUNICATION ====================
+
+model Announcement {
+  id          String   @id @default(uuid())
+  churchId    String
+  church      Church   @relation(fields: [churchId], references: [id])
+  authorId    String
+  author      User     @relation(fields: [authorId], references: [id])
+  title       String
+  content     String
+  targetScope String   @default("ALL")
+  targetId    String?
+  createdAt   DateTime @default(now())
+
+  @@index([churchId, createdAt])
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  title     String
+  body      String
+  link      String?
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId, read])
+}
+
+// ==================== MODULE 7 - SPIRITUEL ====================
+
+model PrayerRequest {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  churchId  String
+  church    Church   @relation(fields: [churchId], references: [id])
+  content   String
+  isPublic  Boolean  @default(true)
+  prayCount Int      @default(0)
+  answered  Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model Testimony {
+  id        String          @id @default(uuid())
+  userId    String
+  user      User            @relation(fields: [userId], references: [id])
+  churchId  String
+  church    Church          @relation(fields: [churchId], references: [id])
+  title     String
+  content   String
+  status    TestimonyStatus @default(EN_ATTENTE)
+  createdAt DateTime        @default(now())
+}
+
+model Sermon {
+  id          String   @id @default(uuid())
+  churchId    String
+  church      Church   @relation(fields: [churchId], references: [id])
+  title       String
+  preacher    String
+  date        DateTime
+  audioUrl    String?
+  videoUrl    String?
+  textContent String?
+  isShared    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+}
+
+// ==================== MODULE 8 - VISITEURS ====================
+
+model Visitor {
+  id         String          @id @default(uuid())
+  churchId   String
+  church     Church          @relation(fields: [churchId], references: [id])
+  firstName  String
+  lastName   String
+  phone      String?
+  email      String?
+  firstVisit DateTime        @default(now())
+  lastVisit  DateTime?
+  status     VisitorStatus   @default(NOUVEAU)
+  createdAt  DateTime        @default(now())
+  followUps  VisitorFollowUp[]
+
+  @@index([churchId, status])
+}
+
+model VisitorFollowUp {
+  id        String   @id @default(uuid())
+  visitorId String
+  visitor   Visitor  @relation(fields: [visitorId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  date      DateTime @default(now())
+  note      String
+  step      String?
+}
+
+// ==================== MODULE 9 - FINANCES ====================
+
+model Donation {
+  id          String        @id @default(uuid())
+  churchId    String
+  church      Church        @relation(fields: [churchId], references: [id])
+  userId      String?
+  user        User?         @relation(fields: [userId], references: [id])
+  amount      Float
+  type        DonationType  @default(OFFRANDE)
+  method      PaymentMethod @default(ESPECES)
+  date        DateTime      @default(now())
+  donorName   String?
+  receiptSent Boolean       @default(false)
+  createdAt   DateTime      @default(now())
+
+  @@index([churchId, date])
+}
+
+model Budget {
+  id         String @id @default(uuid())
+  churchId   String
+  church     Church @relation(fields: [churchId], references: [id])
+  department String
+  year       Int
+  month      Int?
+  allocated  Float  @default(0)
+  spent      Float  @default(0)
+
+  @@unique([churchId, department, year, month])
+}
+
+// ==================== MODULE 10 - EVENEMENTS ====================
+
+model Event {
+  id            String              @id @default(uuid())
+  churchId      String
+  church        Church              @relation(fields: [churchId], references: [id])
+  title         String
+  description   String?
+  type          String?
+  startDate     DateTime
+  endDate       DateTime?
+  location      String?
+  capacity      Int?
+  createdAt     DateTime            @default(now())
+  registrations EventRegistration[]
+}
+
+model EventRegistration {
+  id        String   @id @default(uuid())
+  eventId   String
+  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  status    String   @default("INSCRIT")
+  createdAt DateTime @default(now())
+
+  @@unique([eventId, userId])
+}
+
+// ==================== MODULE 11 - SALLES ====================
+
+model Room {
+  id       String        @id @default(uuid())
+  churchId String
+  church   Church        @relation(fields: [churchId], references: [id])
+  name     String
+  capacity Int?
+  features String?
+  bookings RoomBooking[]
+}
+
+model RoomBooking {
+  id        String        @id @default(uuid())
+  roomId    String
+  room      Room          @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User          @relation(fields: [userId], references: [id])
+  title     String
+  startTime DateTime
+  endTime   DateTime
+  status    BookingStatus @default(EN_ATTENTE)
+  createdAt DateTime      @default(now())
+}
+
+// ==================== MODULE 12 - CELLULES ====================
+
+model Cell {
+  id          String        @id @default(uuid())
+  churchId    String
+  church      Church        @relation(fields: [churchId], references: [id])
+  name        String
+  description String?
+  leaderId    String
+  leader      User          @relation("CellLeader", fields: [leaderId], references: [id])
+  members     User[]        @relation("CellMembers")
+  meetings    CellMeeting[]
+  reports     CellReport[]
+  createdAt   DateTime      @default(now())
+}
+
+model CellMeeting {
+  id          String   @id @default(uuid())
+  cellId      String
+  cell        Cell     @relation(fields: [cellId], references: [id], onDelete: Cascade)
+  date        DateTime
+  location    String?
+  topic       String?
+  minutes     String?
+  attendeeIds String[]
+  createdAt   DateTime @default(now())
+}
+
+model CellReport {
+  id             String @id @default(uuid())
+  cellId         String
+  cell           Cell   @relation(fields: [cellId], references: [id], onDelete: Cascade)
+  month          Int
+  year           Int
+  summary        String?
+  totalAttendees Int    @default(0)
+  newMembers     Int    @default(0)
+
+  @@unique([cellId, month, year])
+}
+
+// ==================== MODULE 13 - SUIVI PASTORAL ====================
+
+model PastoralNote {
+  id               String    @id @default(uuid())
+  memberId         String
+  member           User      @relation("PastoralSubject", fields: [memberId], references: [id])
+  churchId         String
+  church           Church    @relation(fields: [churchId], references: [id])
+  pastorId         String
+  pastor           User      @relation("PastoralAuthor", fields: [pastorId], references: [id])
+  encryptedContent String
+  reminderDate     DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+}
+
+// ==================== MODULE 14 - CERTIFICATS ====================
+
+model Certificate {
+  id        String          @id @default(uuid())
+  userId    String
+  user      User            @relation(fields: [userId], references: [id])
+  churchId  String
+  church    Church          @relation(fields: [churchId], references: [id])
+  type      CertificateType
+  issueDate DateTime        @default(now())
+  pdfUrl    String?
+  data      Json?
+  createdAt DateTime        @default(now())
+}
