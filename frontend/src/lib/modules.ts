@@ -221,6 +221,30 @@ export const MODULES: ModuleItem[] = [
     path: "/dashboard/dons",
     roles: ["SUPER_ADMIN", "ADMIN", "PASTEUR"],
   },
+  {
+    id: 23,
+    name: "Messagerie",
+    description: "Messages internes par groupe",
+    icon: "MessageSquare",
+    path: "/dashboard/messagerie",
+    roles: ["SUPER_ADMIN", "ADMIN", "PASTEUR", "MEMBRE"],
+  },
+  {
+    id: 24,
+    name: "Tâches",
+    description: "Gestion des taches et responsabilites",
+    icon: "CheckSquare",
+    path: "/dashboard/taches",
+    roles: ["SUPER_ADMIN", "ADMIN", "PASTEUR"],
+  },
+  {
+    id: 25,
+    name: "Rapports",
+    description: "Rapports d'activite de l'eglise",
+    icon: "BarChart3",
+    path: "/dashboard/rapports",
+    roles: ["SUPER_ADMIN", "ADMIN", "PASTEUR"],
+  },
 ];
 
 export function getModulesForRole(role: Role): ModuleItem[] {

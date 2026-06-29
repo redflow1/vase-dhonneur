@@ -22,6 +22,8 @@ import postsRoutes from "./routes/posts";
 import tribesRoutes from "./routes/tribes";
 import departmentsRoutes from "./routes/departments";
 import notificationsRoutes from "./routes/notifications";
+import conversationsRoutes from "./routes/conversations";
+import tasksRoutes from "./routes/tasks";
 import { authMiddleware } from "./middleware/auth";
 
 const app = express();
@@ -60,6 +62,8 @@ app.use("/api/posts", authMiddleware, postsRoutes);
 app.use("/api/tribes", authMiddleware, tribesRoutes);
 app.use("/api/departments", authMiddleware, departmentsRoutes);
 app.use("/api/notifications", authMiddleware, notificationsRoutes);
+app.use("/api/conversations", authMiddleware, conversationsRoutes);
+app.use("/api/tasks", authMiddleware, tasksRoutes);
 
 app.listen(PORT, () => {
   console.log(`Backend running on port ${PORT}`);
