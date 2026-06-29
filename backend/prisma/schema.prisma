@@ -24,6 +24,7 @@ enum Role {
   EVA
   MRS
   MEMBRE
+  VISITEUR
 }
 
 enum VisitorStatus {

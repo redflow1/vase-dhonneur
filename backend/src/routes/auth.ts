@@ -56,7 +56,7 @@ router.post("/register", async (req: Request, res: Response) => {
         lastName,
         email,
         password: hashedPassword,
-        role: "MEMBRE",
+        role: "VISITEUR",
         churchId: church.id,
       },
     });

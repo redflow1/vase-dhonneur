@@ -12,7 +12,8 @@ export type Role =
   | "ACCUEIL"
   | "EVA"
   | "MRS"
-  | "MEMBRE";
+  | "MEMBRE"
+  | "VISITEUR";
 
 export const ROLE_LABELS: Record<Role, string> = {
   SUPER_ADMIN: "Super-Admin",
@@ -29,6 +30,7 @@ export const ROLE_LABELS: Record<Role, string> = {
   EVA: "EVA",
   MRS: "MRS",
   MEMBRE: "Membre",
+  VISITEUR: "Visiteur",
 };
 
 export interface ModuleItem {
