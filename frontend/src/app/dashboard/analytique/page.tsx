@@ -222,8 +222,8 @@ export default function AnalytiquePage() {
                   cx="50%"
                   cy="50%"
                   outerRadius={80}
-                  label={({ type, percent }) =>
-                    `${type} ${Math.round((percent ?? 0) * 100)}%`
+                  label={({ name, percent }) =>
+                    `${name} ${Math.round((percent ?? 0) * 100)}%`
                   }
                 >
                   {donsType.map((entry) => (
