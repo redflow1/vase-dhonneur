@@ -85,6 +85,47 @@ router.post("/register", async (req: Request, res: Response) => {
   }
 });
 
+// POST /api/auth/init-superadmin — Crée le premier SUPER_ADMIN (1 seule fois)
+router.post("/init-superadmin", async (_req: Request, res: Response) => {
+  try {
+    const existing = await prisma.user.findFirst({ where: { role: "SUPER_ADMIN" } });
+    if (existing) {
+      return res.status(400).json({ message: "Un SUPER_ADMIN existe déjà" });
+    }
+
+    let church = await prisma.church.findFirst();
+    if (!church) {
+      church = await prisma.church.create({
+        data: { name: "Église Vases d'Honneur", city: "Ville" },
+      });
+    }
+
+    const hashedPassword = await bcrypt.hash("Admin123!", 12);
+    const user = await prisma.user.create({
+      data: {
+        firstName: "Super",
+        lastName: "Admin",
+        email: "superadmin@vasesdhonneur.com",
+        password: hashedPassword,
+        role: "SUPER_ADMIN",
+        churchId: church.id,
+      },
+    });
+
+    res.status(201).json({
+      message: "SUPER_ADMIN créé avec succès",
+      credentials: {
+        email: user.email,
+        password: "Admin123!",
+        church: church.name,
+      },
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Erreur serveur" });
+  }
+});
+
 // POST /api/auth/create-admin — Réservé SUPER_ADMIN
 router.post(
   "/create-admin",

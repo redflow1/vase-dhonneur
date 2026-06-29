@@ -1,6 +1,6 @@
 import { Role } from "./modules";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://backend-production-03dd.up.railway.app/api";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://backend-production-6c071.up.railway.app/api";
 
 export interface AuthUser {
   id: string;

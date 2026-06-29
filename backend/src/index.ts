@@ -31,7 +31,7 @@ const PORT = process.env.PORT || 4000;
 
 const allowedOrigins = process.env.FRONTEND_URL
   ? process.env.FRONTEND_URL.split(",")
-  : ["http://localhost:3000", "https://frontend-production-d964.up.railway.app"];
+  : ["http://localhost:3000", "https://frontend-production-be7f.up.railway.app"];
 app.use(cors({ origin: allowedOrigins }));
 app.use(express.json());
 app.use("/uploads", express.static(path.join(__dirname, "..", "uploads")));
