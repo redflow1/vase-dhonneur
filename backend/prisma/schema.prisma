@@ -112,10 +112,10 @@ model Church {
   pastoralNotes      PastoralNote[]
   certificates       Certificate[]
   posts              Post[]
-  postComments       PostComment[]
-  postLikes          PostLike[]
   tribes             Tribe[]
   departments        Department[]
+  conversations      Conversation[]
+  tasks              Task[]
 }
 
 model User {
@@ -161,9 +161,11 @@ model User {
   userDepartments    UserDepartment[]
   conversations      ConversationParticipant[]
   messages           Message[]
-  assignedTasks      Task[]          @relation("TaskAssignee")
-  createdTasks       Task[]          @relation("TaskCreator")
-}
+   assignedTasks      Task[]          @relation("TaskAssignee")
+   createdTasks       Task[]          @relation("TaskCreator")
+   ledTribes          Tribe[]         @relation("TribeLeader")
+   ledDepartments     Department[]    @relation("DepartmentLeader")
+ }
 
 // ==================== MODULE 2 - PRESENCES ====================
 
