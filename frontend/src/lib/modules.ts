@@ -181,6 +181,22 @@ export const MODULES: ModuleItem[] = [
     path: "/dashboard/admin-management",
     roles: ["SUPER_ADMIN"],
   },
+  {
+    id: 18,
+    name: "Tribus",
+    description: "Gerer les 12 tribus de l'eglise",
+    icon: "Users",
+    path: "/dashboard/tribes",
+    roles: ["SUPER_ADMIN", "ADMIN", "PASTEUR"],
+  },
+  {
+    id: 19,
+    name: "Departements",
+    description: "Gerer les departements de service",
+    icon: "LayoutDashboard",
+    path: "/dashboard/departements",
+    roles: ["SUPER_ADMIN", "ADMIN", "PASTEUR"],
+  },
 ];
 
 export function getModulesForRole(role: Role): ModuleItem[] {

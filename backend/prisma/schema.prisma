@@ -114,6 +114,8 @@ model Church {
   posts              Post[]
   postComments       PostComment[]
   postLikes          PostLike[]
+  tribes             Tribe[]
+  departments        Department[]
 }
 
 model User {
@@ -133,6 +135,8 @@ model User {
   church     Church    @relation(fields: [churchId], references: [id])
   cellId     String?
   cell       Cell?     @relation("CellMembers", fields: [cellId], references: [id])
+  tribeId    String?
+  tribe      Tribe?    @relation(fields: [tribeId], references: [id])
   createdAt  DateTime  @default(now())
 
   attendances        Attendance[]
@@ -154,6 +158,7 @@ model User {
   posts              Post[]
   postComments       PostComment[]
   postLikes          PostLike[]
+  userDepartments    UserDepartment[]
 }
 
 // ==================== MODULE 2 - PRESENCES ====================
@@ -367,7 +372,48 @@ model PostComment {
   authorId  String
   author    User     @relation(fields: [authorId], references: [id])
   content   String
-  createdAt DateTime @default(now())
+  createdAt DateTime        @default(now())
+}
+
+// ==================== MODULE 17 - TRIBUS & DEPARTEMENTS ====================
+
+model Tribe {
+  id         String   @id @default(uuid())
+  churchId   String
+  church     Church   @relation(fields: [churchId], references: [id])
+  name       String
+  description String?
+  leaderId   String?
+  leader     User?    @relation("TribeLeader", fields: [leaderId], references: [id])
+  createdAt  DateTime @default(now())
+
+  members    User[]
+
+  @@unique([churchId, name])
+}
+
+model Department {
+  id          String           @id @default(uuid())
+  churchId    String
+  church      Church           @relation(fields: [churchId], references: [id])
+  name        String
+  description String?
+  leaderId    String?
+  leader      User?            @relation("DepartmentLeader", fields: [leaderId], references: [id])
+  createdAt   DateTime         @default(now())
+
+  members     UserDepartment[]
+
+  @@unique([churchId, name])
+}
+
+model UserDepartment {
+  userId       String
+  user         User       @relation(fields: [userId], references: [id])
+  departmentId String
+  department   Department @relation(fields: [departmentId], references: [id])
+
+  @@id([userId, departmentId])
 }
 
 model PostLike {

@@ -19,6 +19,8 @@ import certificatsRoutes from "./routes/certificats";
 import analytiqueRoutes from "./routes/analytique";
 import reseauRoutes from "./routes/reseau";
 import postsRoutes from "./routes/posts";
+import tribesRoutes from "./routes/tribes";
+import departmentsRoutes from "./routes/departments";
 import { authMiddleware } from "./middleware/auth";
 
 const app = express();
@@ -54,6 +56,8 @@ app.use("/api/certificats", authMiddleware, certificatsRoutes);
 app.use("/api/analytique", authMiddleware, analytiqueRoutes);
 app.use("/api/reseau", authMiddleware, reseauRoutes);
 app.use("/api/posts", authMiddleware, postsRoutes);
+app.use("/api/tribes", authMiddleware, tribesRoutes);
+app.use("/api/departments", authMiddleware, departmentsRoutes);
 
 app.listen(PORT, () => {
   console.log(`Backend running on port ${PORT}`);
