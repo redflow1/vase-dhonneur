@@ -17,17 +17,28 @@ function toCSVRow(values: (string | number | null | undefined)[]): string {
 // GET / → events for church
 router.get("/", async (req: Request, res: Response) => {
   try {
-    const { churchId } = (req as any).user;
+    const { churchId, userId } = (req as any).user;
 
     const events = await prisma.event.findMany({
       where: { churchId },
       orderBy: { startDate: "desc" },
       include: {
         _count: { select: { registrations: true } },
+        registrations: {
+          where: { userId },
+          select: { status: true },
+        },
       },
     });
 
-    res.json({ data: events });
+    const data = events.map((e: any) => ({
+      ...e,
+      isInscrit: e.registrations.length > 0,
+      registrationStatus: e.registrations[0]?.status ?? null,
+      registrations: undefined,
+    }));
+
+    res.json({ data });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Erreur serveur" });
@@ -179,6 +190,61 @@ router.delete("/:id/inscription", async (req: Request, res: Response) => {
   }
 });
 
+// POST /:id/confirm → confirm participation (by member)
+router.post("/:id/confirm", async (req: Request, res: Response) => {
+  try {
+    const { churchId, userId } = (req as any).user;
+    const id = req.params.id as string;
+
+    const event = await prisma.event.findFirst({ where: { id, churchId } });
+    if (!event) return res.status(404).json({ message: "Événement non trouvé" });
+
+    const reg = await prisma.eventRegistration.findFirst({
+      where: { eventId: id, userId },
+    });
+    if (!reg) return res.status(400).json({ message: "Vous n'êtes pas inscrit" });
+    if (reg.status === "CONFIRMÉ") return res.json({ message: "Déjà confirmé" });
+
+    await prisma.eventRegistration.update({
+      where: { id: reg.id },
+      data: { status: "CONFIRMÉ" },
+    });
+
+    res.json({ message: "Présence confirmée" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Erreur serveur" });
+  }
+});
+
+// POST /:id/present/:userId → mark as present (by admin/pasteur)
+router.post(
+  "/:id/present/:targetUserId",
+  requireRole("SUPER_ADMIN", "ADMIN", "PASTEUR"),
+  async (req: Request, res: Response) => {
+    try {
+      const { churchId } = (req as any).user;
+      const id = req.params.id as string;
+      const targetUserId = req.params.targetUserId as string;
+
+      const reg = await prisma.eventRegistration.findFirst({
+        where: { eventId: id, userId: targetUserId },
+      });
+      if (!reg) return res.status(404).json({ message: "Inscription non trouvée" });
+
+      await prisma.eventRegistration.update({
+        where: { id: reg.id },
+        data: { status: "PRÉSENT" },
+      });
+
+      res.json({ message: "Marqué comme présent" });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: "Erreur serveur" });
+    }
+  }
+);
+
 // GET /:id/participants → participant list; if ?format=csv → CSV export
 router.get("/:id/participants", async (req: Request, res: Response) => {
   try {
@@ -196,6 +262,8 @@ router.get("/:id/participants", async (req: Request, res: Response) => {
       },
       orderBy: { createdAt: "asc" },
     });
+
+    const data = registrations.map((r: any) => ({ ...r, userId: r.user.id }));
 
     if (format === "csv") {
       let csv: string;

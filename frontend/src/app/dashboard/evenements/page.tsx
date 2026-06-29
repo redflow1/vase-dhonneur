@@ -16,6 +16,8 @@ type EvenementType = "CULTE" | "CROISADE" | "CONFERENCE" | "CAMP" | "REUNION" | 
 
 interface Participant {
   id: string;
+  status?: string;
+  userId?: string;
   firstName: string;
   lastName: string;
 }
@@ -31,6 +33,7 @@ interface Evenement {
   capacity?: number;
   _count?: { registrations: number };
   isInscrit?: boolean;
+  registrationStatus?: string | null;
 }
 
 const TYPE_VARIANT: Record<EvenementType, "default" | "success" | "warning" | "info" | "danger"> = {
@@ -58,6 +61,40 @@ export default function EvenementsPage() {
   // Inscription/annulation
   const [inscriptionLoading, setInscriptionLoading] = useState<string | null>(null);
 
+  // Confirmation / Présence
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
+
+  const handleConfirm = async (evId: string) => {
+    setActionLoading(`confirm-${evId}`);
+    try {
+      await apiFetch(`/evenements/${evId}/confirm`, { method: "POST" });
+      refetch();
+    } catch (err: any) {
+      alert(err.message || "Erreur");
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleMarkPresent = async (evId: string, userId: string) => {
+    setActionLoading(`present-${evId}-${userId}`);
+    try {
+      await apiFetch(`/evenements/${evId}/present/${userId}`, { method: "POST" });
+      const result = await apiFetch(`/evenements/${evId}/participants`);
+      const participants = (result?.data ?? result ?? []).map((r: any) => ({
+        id: r.user?.id ?? r.id,
+        userId: r.user?.id ?? r.userId ?? r.id,
+        firstName: r.user?.firstName ?? r.firstName ?? "",
+        lastName: r.user?.lastName ?? r.lastName ?? "",
+        status: r.status ?? "INSCRIT",
+      }));
+      setParticipantsMap((p) => ({ ...p, [evId]: participants }));
+    } catch {
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
   // Nouvel événement modal
   const [newOpen, setNewOpen] = useState(false);
   const [newForm, setNewForm] = useState({
@@ -84,8 +121,10 @@ export default function EvenementsPage() {
         const result = await apiFetch(`/evenements/${ev.id}/participants`);
         const participants = (result?.data ?? result ?? []).map((r: any) => ({
           id: r.user?.id ?? r.id,
+          userId: r.user?.id ?? r.userId ?? r.id,
           firstName: r.user?.firstName ?? r.firstName ?? "",
           lastName: r.user?.lastName ?? r.lastName ?? "",
+          status: r.status ?? "INSCRIT",
         }));
         setParticipantsMap((p) => ({ ...p, [ev.id]: participants }));
       } catch {
@@ -210,16 +249,35 @@ export default function EvenementsPage() {
 
                 {/* Actions */}
                 <div className="flex flex-wrap gap-2">
+                  {ev.isInscrit && ev.registrationStatus === "INSCRIT" && (
+                    <button
+                      onClick={() => handleConfirm(ev.id)}
+                      disabled={actionLoading === `confirm-${ev.id}`}
+                      className="flex-1 px-3 py-1.5 rounded-lg text-xs font-medium bg-amber-100 text-amber-700 hover:bg-amber-200 dark:bg-amber-900/30 dark:text-amber-400 transition-colors disabled:opacity-50"
+                    >
+                      {actionLoading === `confirm-${ev.id}` ? "…" : "Confirmer ma présence"}
+                    </button>
+                  )}
+                  {ev.isInscrit && ev.registrationStatus === "CONFIRMÉ" && (
+                    <span className="flex-1 px-3 py-1.5 rounded-lg text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 text-center">
+                      ✓ Présence confirmée
+                    </span>
+                  )}
                   <button
                     onClick={() => handleInscription(ev)}
                     disabled={inscriptionLoading === ev.id || (!ev.isInscrit && !!ev.capacity && (ev._count?.registrations ?? 0) >= ev.capacity)}
                     className={`flex-1 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors disabled:opacity-50 ${
-                      ev.isInscrit
+                      ev.isInscrit && ev.registrationStatus !== "PRÉSENT"
                         ? "bg-red-100 text-red-600 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400"
+                        : ev.registrationStatus === "PRÉSENT"
+                        ? "bg-gray-100 text-gray-400 dark:bg-gray-800 cursor-not-allowed"
                         : "bg-teal-deep text-white hover:bg-teal-light"
                     }`}
                   >
-                    {inscriptionLoading === ev.id ? "…" : ev.isInscrit ? "Annuler" : "S'inscrire"}
+                    {inscriptionLoading === ev.id ? "…"
+                      : ev.registrationStatus === "PRÉSENT" ? "Présent ✓"
+                      : ev.isInscrit ? "Annuler"
+                      : "S'inscrire"}
                   </button>
                   {isAdmin && (
                     <button
@@ -251,11 +309,24 @@ export default function EvenementsPage() {
                       {loadingParticipants === ev.id ? (
                         <LoadingSpinner size="sm" />
                       ) : participantsMap[ev.id]?.length ? (
-                        <div className="flex flex-wrap gap-1.5">
+                        <div className="space-y-1.5 max-h-64 overflow-y-auto">
                           {participantsMap[ev.id].map((p) => (
-                            <span key={p.id} className="text-xs bg-teal-muted text-teal-deep rounded-full px-2.5 py-0.5">
-                              {p.firstName} {p.lastName}
-                            </span>
+                            <div key={p.id} className="flex items-center justify-between text-xs bg-teal-muted text-teal-deep rounded-lg px-3 py-2">
+                              <span className="font-medium">{p.firstName} {p.lastName}</span>
+                              <div className="flex items-center gap-2">
+                                {p.status === "PRÉSENT" ? (
+                                  <span className="text-green-600 dark:text-green-400 font-semibold">✓ Présent</span>
+                                ) : (
+                                  <button
+                                    onClick={() => handleMarkPresent(ev.id, p.userId!)}
+                                    disabled={actionLoading === `present-${ev.id}-${p.userId}`}
+                                    className="px-2 py-0.5 rounded bg-teal-deep text-white text-[10px] hover:bg-teal-light transition disabled:opacity-50"
+                                  >
+                                    {actionLoading === `present-${ev.id}-${p.userId}` ? "…" : "Marquer présent"}
+                                  </button>
+                                )}
+                              </div>
+                            </div>
                           ))}
                         </div>
                       ) : (
