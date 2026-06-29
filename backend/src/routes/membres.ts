@@ -62,6 +62,9 @@ router.get(
             role: true,
             isActive: true,
             createdAt: true,
+            tribeId: true,
+            tribe: { select: { id: true, name: true } },
+            userDepartments: { select: { department: { select: { id: true, name: true } } } },
           };
 
       const [total, members] = await Promise.all([
@@ -94,6 +97,9 @@ router.get(
         prenom: m.firstName,
         nom: m.lastName,
         notesCount: notesCountMap.get(m.id) ?? 0,
+        tribeId: m.tribeId,
+        tribe: m.tribe ?? null,
+        departments: m.userDepartments?.map((ud: any) => ud.department) ?? [],
       }));
 
       res.json({
@@ -106,6 +112,41 @@ router.get(
     }
   }
 );
+
+// GET /annuaire → public directory for all members
+router.get("/annuaire", async (req: Request, res: Response) => {
+  try {
+    const { churchId } = (req as any).user;
+    const tribeId = req.query.tribeId as string;
+    const departmentId = req.query.departmentId as string;
+
+    const where: any = { churchId, isActive: true };
+    if (tribeId) where.tribeId = tribeId;
+    if (departmentId) where.userDepartments = { some: { departmentId } };
+
+    const members = await prisma.user.findMany({
+      where,
+      select: {
+        id: true, firstName: true, lastName: true, role: true, phone: true, email: true,
+        tribeId: true,
+        tribe: { select: { id: true, name: true } },
+        userDepartments: { select: { department: { select: { id: true, name: true } } } },
+      },
+      orderBy: [{ lastName: "asc" }, { firstName: "asc" }],
+    });
+
+    const data = members.map((m: any) => ({
+      ...m,
+      departments: m.userDepartments?.map((ud: any) => ud.department) ?? [],
+      userDepartments: undefined,
+    }));
+
+    res.json({ data });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Erreur serveur" });
+  }
+});
 
 // GET /anniversaires → birthdays in next 30 days
 router.get(

@@ -205,6 +205,22 @@ export const MODULES: ModuleItem[] = [
     path: "/dashboard/calendrier",
     roles: ["SUPER_ADMIN", "ADMIN", "PASTEUR", "MEMBRE"],
   },
+  {
+    id: 21,
+    name: "Annuaire",
+    description: "Annuaire des membres par tribu/departement",
+    icon: "BookOpen",
+    path: "/dashboard/annuaire",
+    roles: ["SUPER_ADMIN", "ADMIN", "PASTEUR", "MEMBRE", "VISITEUR"],
+  },
+  {
+    id: 22,
+    name: "Dons",
+    description: "Gestion des dons et offrandes",
+    icon: "Wallet",
+    path: "/dashboard/dons",
+    roles: ["SUPER_ADMIN", "ADMIN", "PASTEUR"],
+  },
 ];
 
 export function getModulesForRole(role: Role): ModuleItem[] {
