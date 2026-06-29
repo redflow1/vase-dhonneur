@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { getUser, AuthUser } from "@/lib/auth";
 import { getModulesForRole, ModuleItem } from "@/lib/modules";
+import PostsFeed from "@/components/PostsFeed";
 import Link from "next/link";
 import {
   GitBranch, Users, LayoutDashboard, ClipboardList, Music,
@@ -39,6 +40,10 @@ export default function DashboardPage() {
         <p className="text-muted mt-1">
           Tableau de bord — {user.churchName}
         </p>
+      </div>
+
+      <div className="mb-10">
+        <PostsFeed />
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-4">

@@ -18,6 +18,7 @@ import pastoralRoutes from "./routes/pastoral";
 import certificatsRoutes from "./routes/certificats";
 import analytiqueRoutes from "./routes/analytique";
 import reseauRoutes from "./routes/reseau";
+import postsRoutes from "./routes/posts";
 import { authMiddleware } from "./middleware/auth";
 
 const app = express();
@@ -52,6 +53,7 @@ app.use("/api/pastoral", authMiddleware, pastoralRoutes);
 app.use("/api/certificats", authMiddleware, certificatsRoutes);
 app.use("/api/analytique", authMiddleware, analytiqueRoutes);
 app.use("/api/reseau", authMiddleware, reseauRoutes);
+app.use("/api/posts", authMiddleware, postsRoutes);
 
 app.listen(PORT, () => {
   console.log(`Backend running on port ${PORT}`);

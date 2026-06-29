@@ -111,6 +111,9 @@ model Church {
   cells              Cell[]
   pastoralNotes      PastoralNote[]
   certificates       Certificate[]
+  posts              Post[]
+  postComments       PostComment[]
+  postLikes          PostLike[]
 }
 
 model User {
@@ -148,6 +151,9 @@ model User {
   pastoralAuthored   PastoralNote[]    @relation("PastoralAuthor")
   certificates       Certificate[]
   cellsLed           Cell[]            @relation("CellLeader")
+  posts              Post[]
+  postComments       PostComment[]
+  postLikes          PostLike[]
 }
 
 // ==================== MODULE 2 - PRESENCES ====================
@@ -333,7 +339,45 @@ model PrayerRequest {
   isPublic  Boolean  @default(true)
   prayCount Int      @default(0)
   answered  Boolean  @default(false)
+  createdAt DateTime        @default(now())
+}
+
+// ==================== MODULE 16 - FIL D'ACTUALITE ====================
+
+model Post {
+  id        String        @id @default(uuid())
+  churchId  String
+  church    Church        @relation(fields: [churchId], references: [id])
+  authorId  String
+  author    User          @relation(fields: [authorId], references: [id])
+  content   String
+  imageUrl  String?
+  createdAt DateTime      @default(now())
+
+  comments  PostComment[]
+  likes     PostLike[]
+
+  @@index([churchId, createdAt])
+}
+
+model PostComment {
+  id        String   @id @default(uuid())
+  postId    String
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  authorId  String
+  author    User     @relation(fields: [authorId], references: [id])
+  content   String
   createdAt DateTime @default(now())
+}
+
+model PostLike {
+  id        String   @id @default(uuid())
+  postId    String
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@unique([postId, userId])
 }
 
 model Testimony {
