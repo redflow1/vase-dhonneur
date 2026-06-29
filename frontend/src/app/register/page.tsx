@@ -1,11 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Logo } from "@/components/Logo";
 import { saveAuth, apiFetch, AuthUser } from "@/lib/auth";
-import { ROLE_LABELS, Role } from "@/lib/modules";
-import { Eye, EyeOff, UserPlus, ChevronLeft, ChevronRight, Check } from "lucide-react";
+import { Eye, EyeOff, UserPlus, ChevronLeft, Check, Search } from "lucide-react";
 import Link from "next/link";
 
 interface Church {
@@ -14,7 +13,7 @@ interface Church {
   city: string;
 }
 
-const STEPS = ["Informations personnelles", "Eglise", "Role"];
+const STEPS = ["Informations personnelles", "Eglise"];
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -33,19 +32,54 @@ export default function RegisterPage() {
   // Step 2
   const [churchName, setChurchName] = useState("");
   const [churchCity, setChurchCity] = useState("");
-  const [parentChurchId, setParentChurchId] = useState("");
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [selectedChurch, setSelectedChurch] = useState<Church | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const suggestionsRef = useRef<HTMLDivElement>(null);
 
-  // Step 3
-  const [role, setRole] = useState<Role>("MEMBRE");
+  const filteredChurches = useMemo(() => {
+    if (!churchName.trim()) return churches;
+    const q = churchName.toLowerCase();
+    return churches.filter(
+      (c) => c.name.toLowerCase().includes(q) || c.city.toLowerCase().includes(q)
+    );
+  }, [churches, churchName]);
 
   useEffect(() => {
     apiFetch("/auth/churches").then(setChurches).catch(() => {});
   }, []);
 
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      if (
+        suggestionsRef.current &&
+        !suggestionsRef.current.contains(e.target as Node) &&
+        inputRef.current &&
+        !inputRef.current.contains(e.target as Node)
+      ) {
+        setShowSuggestions(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
+
   const canNext = () => {
     if (step === 0) return firstName && lastName && email && password.length >= 6;
-    if (step === 1) return churchName && churchCity;
-    return true;
+    return churchName && churchCity;
+  };
+
+  const handleSelectChurch = (c: Church) => {
+    setChurchName(c.name);
+    setChurchCity(c.city);
+    setSelectedChurch(c);
+    setShowSuggestions(false);
+  };
+
+  const handleChurchInput = (value: string) => {
+    setChurchName(value);
+    setSelectedChurch(null);
+    setShowSuggestions(true);
   };
 
   const handleSubmit = async () => {
@@ -61,8 +95,6 @@ export default function RegisterPage() {
           password,
           churchName,
           churchCity,
-          parentChurchId: parentChurchId || null,
-          role,
         }),
       });
       saveAuth(data.token, data.user as AuthUser);
@@ -177,15 +209,47 @@ export default function RegisterPage() {
           {/* Step 2 */}
           {step === 1 && (
             <div className="space-y-4">
-              <div>
+              <div className="relative">
                 <label className="block text-sm font-medium mb-1.5">Nom de l&apos;eglise</label>
-                <input
-                  type="text"
-                  value={churchName}
-                  onChange={(e) => setChurchName(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl bg-input-bg border border-input-border text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-gold transition"
-                  placeholder="Eglise Vases d'Honneur de..."
-                />
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted" />
+                  <input
+                    ref={inputRef}
+                    type="text"
+                    value={churchName}
+                    onChange={(e) => handleChurchInput(e.target.value)}
+                    onFocus={() => setShowSuggestions(true)}
+                    className="w-full pl-10 pr-4 py-3 rounded-xl bg-input-bg border border-input-border text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-gold transition"
+                    placeholder="Cherchez ou tapez le nom de votre eglise..."
+                    autoComplete="off"
+                  />
+                </div>
+                {showSuggestions && filteredChurches.length > 0 && (
+                  <div
+                    ref={suggestionsRef}
+                    className="absolute z-50 mt-1 w-full bg-card-bg border border-card-border rounded-xl shadow-lg max-h-48 overflow-y-auto"
+                  >
+                    {filteredChurches.map((c) => (
+                      <button
+                        key={c.id}
+                        type="button"
+                        onClick={() => handleSelectChurch(c)}
+                        className={`w-full text-left px-4 py-3 text-sm hover:bg-teal-muted transition ${
+                          churchName === c.name && churchCity === c.city
+                            ? "bg-teal-muted text-teal-deep font-semibold"
+                            : "text-foreground"
+                        }`}
+                      >
+                        {c.name} <span className="text-muted">— {c.city}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {selectedChurch && (
+                  <p className="mt-1.5 text-xs text-teal-deep">
+                    Eglise existante selectionnee
+                  </p>
+                )}
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1.5">Ville</label>
@@ -193,54 +257,10 @@ export default function RegisterPage() {
                   type="text"
                   value={churchCity}
                   onChange={(e) => setChurchCity(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl bg-input-bg border border-input-border text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-gold transition"
+                  disabled={!!selectedChurch}
+                  className="w-full px-4 py-3 rounded-xl bg-input-bg border border-input-border text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-gold transition disabled:opacity-50 disabled:cursor-not-allowed"
                   placeholder="Douala, Yaounde..."
                 />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1.5">
-                  Eglise mere <span className="text-muted font-normal">(optionnel)</span>
-                </label>
-                <select
-                  value={parentChurchId}
-                  onChange={(e) => setParentChurchId(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl bg-input-bg border border-input-border text-foreground focus:outline-none focus:ring-2 focus:ring-gold transition"
-                >
-                  <option value="">-- Aucune (eglise fondatrice) --</option>
-                  {churches.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name} - {c.city}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-          )}
-
-          {/* Step 3 */}
-          {step === 2 && (
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-1.5">Votre role</label>
-                <select
-                  value={role}
-                  onChange={(e) => setRole(e.target.value as Role)}
-                  className="w-full px-4 py-3 rounded-xl bg-input-bg border border-input-border text-foreground focus:outline-none focus:ring-2 focus:ring-gold transition"
-                >
-                  {(Object.entries(ROLE_LABELS) as [Role, string][])
-                    .filter(([key]) => key !== "SUPER_ADMIN" && key !== "ADMIN")
-                    .map(([key, label]) => (
-                    <option key={key} value={key}>
-                      {label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="p-4 rounded-xl bg-teal-muted border border-card-border">
-                <p className="text-sm text-muted">
-                  Le role determine les modules auxquels vous aurez acces.
-                  Un administrateur d&apos;eglise pourra modifier votre role par la suite.
-                </p>
               </div>
             </div>
           )}
@@ -258,13 +278,13 @@ export default function RegisterPage() {
               <div />
             )}
 
-            {step < 2 ? (
+            {step < 1 ? (
               <button
                 onClick={() => canNext() && setStep(step + 1)}
                 disabled={!canNext()}
                 className="flex items-center gap-1 px-5 py-2.5 rounded-xl bg-teal-deep text-white hover:bg-teal-light transition font-medium text-sm disabled:opacity-40"
               >
-                Suivant <ChevronRight className="w-4 h-4" />
+                Suivant <Search className="w-4 h-4" />
               </button>
             ) : (
               <button
