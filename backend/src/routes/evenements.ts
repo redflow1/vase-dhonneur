@@ -91,8 +91,9 @@ router.post(
       res.status(500).json({ message: "Erreur serveur" });
     }
   }
+);
 
-  // PUT /:id → update event
+// PUT /:id → update event
 router.put(
   "/:id",
   requireRole("SUPER_ADMIN", "ADMIN", "PASTEUR"),
