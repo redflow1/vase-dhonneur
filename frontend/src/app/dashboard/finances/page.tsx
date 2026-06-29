@@ -302,7 +302,7 @@ export default function FinancesPage() {
                           cx="50%"
                           cy="50%"
                           outerRadius={80}
-                          label={({ type, percent }) => `${type} ${Math.round((percent ?? 0) * 100)}%`}
+                          label={({ payload, percent }: any) => `${payload.type} ${Math.round((percent ?? 0) * 100)}%`}
                         >
                           {Object.keys(rapport.totalByType).map((_, i) => (
                             <RCell key={i} fill={[COLORS.primary, COLORS.accent, COLORS.secondary, COLORS.light][i % 4]} />
