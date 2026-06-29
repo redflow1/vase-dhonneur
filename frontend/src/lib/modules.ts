@@ -197,6 +197,14 @@ export const MODULES: ModuleItem[] = [
     path: "/dashboard/departements",
     roles: ["SUPER_ADMIN", "ADMIN", "PASTEUR"],
   },
+  {
+    id: 20,
+    name: "Calendrier",
+    description: "Vue mensuelle des evenements",
+    icon: "Calendar",
+    path: "/dashboard/calendrier",
+    roles: ["SUPER_ADMIN", "ADMIN", "PASTEUR", "MEMBRE"],
+  },
 ];
 
 export function getModulesForRole(role: Role): ModuleItem[] {

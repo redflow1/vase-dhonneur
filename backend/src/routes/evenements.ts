@@ -71,15 +71,28 @@ router.post(
         },
       });
 
+      // Notify all church members
+      const members = await prisma.user.findMany({
+        where: { churchId, isActive: true },
+        select: { id: true },
+      });
+      await prisma.notification.createMany({
+        data: members.map((m) => ({
+          userId: m.id,
+          title: `Nouvel événement : ${title}`,
+          body: `Le ${new Date(startDate).toLocaleDateString("fr-FR")}${location ? ` — ${location}` : ""}`,
+          link: "/dashboard/evenements",
+        })),
+      });
+
       res.status(201).json({ event });
     } catch (error) {
       console.error(error);
       res.status(500).json({ message: "Erreur serveur" });
     }
   }
-);
 
-// PUT /:id → update event
+  // PUT /:id → update event
 router.put(
   "/:id",
   requireRole("SUPER_ADMIN", "ADMIN", "PASTEUR"),

@@ -7,6 +7,8 @@ import { apiFetch } from "@/lib/auth";
 interface Notification {
   id: string;
   title: string;
+  body?: string;
+  link?: string;
   createdAt: string;
   read: boolean;
 }
@@ -28,8 +30,8 @@ export default function NotificationBell() {
 
   const fetchNotifications = async () => {
     try {
-      const data = await apiFetch("/communication/notifications");
-      setNotifications(Array.isArray(data) ? data : data.notifications ?? []);
+      const data = await apiFetch("/notifications");
+      setNotifications(data.data ?? []);
     } catch {
       // silently fail — bell should not break the UI
     }
@@ -57,7 +59,7 @@ export default function NotificationBell() {
 
   const markAllRead = async () => {
     try {
-      await apiFetch("/communication/notifications/read-all", { method: "PUT" });
+      await apiFetch("/notifications/read-all", { method: "PUT" });
       setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
     } catch {
       // silently fail
@@ -108,9 +110,16 @@ export default function NotificationBell() {
                     !n.read ? "bg-teal-muted/30" : ""
                   }`}
                 >
-                  <span className="text-sm font-medium text-foreground leading-snug">
-                    {n.title}
-                  </span>
+                  {n.link ? (
+                    <a href={n.link} className="text-sm font-medium text-teal-deep hover:underline leading-snug">
+                      {n.title}
+                    </a>
+                  ) : (
+                    <span className="text-sm font-medium text-foreground leading-snug">
+                      {n.title}
+                    </span>
+                  )}
+                  {n.body && <span className="text-xs text-muted">{n.body}</span>}
                   <span className="text-xs text-muted">
                     {formatTime(n.createdAt)}
                   </span>
